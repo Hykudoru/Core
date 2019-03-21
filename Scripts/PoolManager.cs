@@ -1,163 +1,180 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
-namespace Hykudoru.Pools
+public interface IPoolObject
 {
-    public interface IPoolObject
-    {
-        object GetObject();
-    }
+    void OnGetPooledObject();
+}
 
-    public interface IPoolObject<T>
-    {
-        T GetObject();
-    }
+public sealed class PoolManager : MonoBehaviour
+{
+    #region Pools
 
-    public class PoolManager: MonoBehaviour
+    [System.Serializable]
+    public abstract class Pool<T>
     {
-        [Serializable]
-        public class GameObjectPool : Pool<GameObject>
-        {
-            public override void Initialize()
+        [SerializeField] protected string nameID;
+        [SerializeField] protected T poolObject;
+        [SerializeField] protected int defaultSize = 20;
+        [SerializeField] protected bool canExpand = true;
+
+        public string NameID { get { return nameID; } set { nameID = value; } }
+        public T PoolObject { get { return poolObject; } set { poolObject = value; } }
+        public int DefaultSize { get { return defaultSize; } set { defaultSize = value; } }
+        public bool CanExpand { get { return canExpand; } set { canExpand = value; } }
+        public List<T> Objects { get; protected set; }
+        
+        public abstract void Init();
+
+        /*{
+            T obj = default;
+
+            if (Objects.Count > 0)
             {
-                GameObject clone;
-                objects = new List<GameObject>();
+                obj = Objects[Objects.Count - 1];
+            }
+            else if (canExpand)
+            {
+                obj = default;//...
+                Objects.Add(obj);
+            }
+
+            return obj;
+        }*/
+        public abstract T GetPooledObject();
+    }
+
+    [System.Serializable]
+    public class GameObjectPool : Pool<GameObject>
+    {
+        public GameObjectPool(){}
+
+        public override void Init()
+        {
+            if (Objects == null)
+            {
+                Objects = new List<GameObject>(defaultSize);
+
                 for (int i = 0; i < defaultSize; i++)
                 {
-                    clone = Instantiate(Prefab);
+                    GameObject clone = Instantiate<GameObject>(poolObject);
                     clone.SetActive(false);
-                    objects.Add(clone);
+                    Objects.Add(clone);
+                    Debug.Log("Init "+clone);
                 }
             }
+        }
 
-            public override GameObject Get()
+        public override GameObject GetPooledObject()
+        {
+            GameObject obj = null;
+
+            int count = Objects.Count;
+            for (int i = 0; i < count; i++)
             {
-                GameObject obj = objects.Find(o => !o.activeInHierarchy);
-                if (obj == null)
+                if (!Objects[i].activeInHierarchy)
                 {
-                    obj = Instantiate(prefab);
-                    obj.SetActive(false);
-                    objects.Add(obj);
-                }
-
-                return obj;
-            }
-
-            public override void Release(GameObject obj)
-            {
-                obj.SetActive(false);
-            }
-        }
-
-        [SerializeField] private GameObjectPool[] pools;
-        private Dictionary<int, GameObjectPool> poolDictionary;
-        public static PoolManager Instance { get; private set; }
-        GameObjectPool poolCache;
-        GameObject objectCache;
-        
-        private void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-                poolDictionary = new Dictionary<int, GameObjectPool>(pools.Length);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
-
-        // Use this for initialization
-        private void Start()
-        {
-            // Create Pools
-            foreach (GameObjectPool pool in pools)
-            {
-                pool.Initialize();
-                poolDictionary.Add(pool.Tag.GetHashCode(), pool);
-            }
-        }
-        
-        public GameObject Get(int poolID, bool setActive = false)
-        {
-            poolCache = null;
-            objectCache= null;
-
-            if (poolDictionary.TryGetValue(poolID, out poolCache))
-            {
-                objectCache = poolCache.Get();
-                ResetObject(objectCache);
-                if (setActive)
-                {
-                    objectCache.SetActive(true);
+                    obj = Objects[i];
+                    break;
                 }
             }
 
-            return objectCache;
-        }
-        
-        public GameObject Get(string poolID, bool setActive = false)
-        {
-            return Get(poolID.GetHashCode(), setActive);
-        }
-
-        public GameObject Get(Type poolID, bool setActive = false)
-        {
-            return Get(poolID.GetHashCode(), setActive);
-        }
-
-        public TReturn Get<TReturn>(string poolID) where TReturn : Component
-        {
-            objectCache = Get(poolID.GetHashCode());
-
-            if (objectCache != null)
+            if (obj == null && canExpand)
             {
-                return objectCache.GetComponent<TReturn>();
+                obj = Instantiate<GameObject>(poolObject);
+                Objects.Add(obj);
             }
 
-            return default(TReturn);
-        }
-
-        public void Release(GameObject obj)
-        {
             if (obj != null)
             {
-                obj.SetActive(false);
-                obj.transform.parent = transform;
+                obj.transform.position = Vector3.zero;
+                obj.transform.rotation = Quaternion.identity;
+                obj.SetActive(true);
+
+                IPoolObject pObj = obj.GetComponent<IPoolObject>() as IPoolObject;
+                if (pObj != null)
+                {
+                    pObj.OnGetPooledObject();
+                }
             }
+
+            return obj;
+        }
+    }
+
+    #endregion
+
+    [SerializeField] private List<GameObjectPool> pools;
+    private Dictionary<string, GameObjectPool> poolDictionary;
+    private static PoolManager instance;
+    public static PoolManager Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                Debug.Log("PoolManager must be attached to a GameObject!");
+            }
+
+            return instance;
+        }
+    }
+
+    private void Awake()
+    {
+        // Ensure first instance never destroyed
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(instance);
         }
 
-        public void Release(string poolID, GameObject obj)
+        // Prevent multiple PoolManagers
+        if (instance != this)
         {
-            if (obj != null)
+            Debug.LogWarning("Only one PoolManager can exist at a time!");
+            Destroy(this);
+        }
+        else
+        {   // Initialize first and only PoolManager
+            if (pools != null)
             {
-                Release(obj);
-                poolCache = null;
-                if (poolDictionary.TryGetValue(poolID.GetHashCode(), out poolCache))
+                int count = pools.Count;
+                poolDictionary = new Dictionary<string, GameObjectPool>(count);
+                for (int i = 0; i < count; i++)
                 {
-                    poolCache.Release(obj);
+                    pools[i].Init();
+                    poolDictionary.Add(pools[i].NameID, pools[i]);
                 }
             }
         }
-
-        private void ResetObject(GameObject obj)
+    }
+    
+    public GameObject GetPooledObject(string poolKey)
+    {
+        GameObjectPool pool = null;
+        if (poolDictionary.TryGetValue(poolKey, out pool))
         {
-            obj.transform.parent = null;
-            obj.transform.localPosition = Vector3.zero;
-            obj.transform.localRotation = Quaternion.identity;
-            obj.transform.localScale = Vector3.one;
-
-            Rigidbody body = obj.GetComponent<Rigidbody>();
-            if (body != null)
-            {
-                body.position = Vector3.zero;
-                body.rotation = Quaternion.identity;
-                body.velocity = Vector3.zero;
-                body.angularVelocity = Vector3.zero;
-            }
+            return pool.GetPooledObject();
         }
+
+        Debug.LogWarning("Pool '" + poolKey + "'" + " not found.");
+
+        return null;
+    }
+}
+
+namespace Hykudoru.Pools.V2
+{
+    public class PoolInfo
+    {
+
+    }
+
+    class GameObjectPool
+    {
+
     }
 }

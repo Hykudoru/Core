@@ -1,53 +1,84 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace Hykudoru.Pools
+/*
+public class PoolManager : MonoBehaviour
 {
+    
+    //Unity 
     [Serializable]
-    public class Pool<T> where T : new()
+    public class Pool
     {
-        //static List<Pool<T>> poolDictionary;
-        [SerializeField] protected string tag;
-        [SerializeField] protected T prefab;
-        [SerializeField] protected int defaultSize = 20;
+        [SerializeField] protected string id;
+    }
 
-        public string Tag { get { return tag; } set { tag = value; } }
-        public T Prefab { get { return prefab; } set { prefab = value; } }
-        public int DefaultSize { get { return defaultSize; } set { defaultSize = Mathf.Abs(value); } }
+    public class Pool<T>
+    {
 
-        protected List<T> objects;
+    }
 
-        public virtual void Initialize()
+    public class PoolObject : MonoBehaviour
+    {
+        public List<PoolObject> Pool { get; set; }
+        public bool IsAvailable { get; set; }
+
+        public void Release()
         {
-            objects = new List<T>(defaultSize);
-            for (int i = 0; i < defaultSize; i++)
+            if (Pool != null)
             {
-                objects[i] = default(T);
-            }
-        }
-
-        public virtual T Get()
-        {
-            T obj = default(T);
-
-            if (objects.Count > 0)
-            {
-                obj = objects[objects.Count - 1];
-                objects.Remove(obj);
+                IsAvailable = true;
             }
             else
             {
-                obj = new T();
-                objects.Add(obj);
+                Destroy(gameObject);
             }
-
-            return obj;
-        }
-
-        public virtual void Release(T obj)
-        {
-            objects.Add(obj);
         }
     }
+
+    public class PoolObject<T>
+    {
+        public List<T> Pool { get; set; }
+        public bool IsAvailable { get; set; }
+
+        public void Release()
+        {
+            if (Pool != null)
+            {
+                IsAvailable = true;
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    [SerializeField] PoolObject prefab;
+    protected Dictionary<Type, List<PoolObject>> pools;
+    
+    //int prevIndex;
+    public GameObject GetObject()
+    {
+        GameObject obj;
+        int count = pool.Count;
+        for (int i = 0; i < count; i++)
+        {
+            if (!pool[i].activeInHierarchy)
+            {
+                obj = pool[i];
+            }
+        }
+    }
+
+    public void Release(PoolObject obj)
+    {
+        obj.gameObject.SetActive(false);
+    }
+
+	// Update is called once per frame
+	void Update () {
+		
+	}
 }
+*/

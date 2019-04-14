@@ -247,3 +247,63 @@ namespace Hykudoru.Events.V2
         }
     }
 }
+
+namespace Hykudoru.Events.V3
+{
+    public class EventType
+    {
+        public const EventType Empty = null;
+    }
+
+    public class EventManager<TEvent, TData> where TEvent : EventType
+    {
+        private static Dictionary<Type, List<Action<TData>>> dataEvents;
+
+        static EventManager()
+        {
+            dataEvents = new Dictionary<Type, List<Action<TData>>>();
+        }
+
+        // ADD LISTENER
+        public static void AddListener(Action<TData> action)
+        {
+            List<Action<TData>> eventActionList;
+            if (dataEvents.TryGetValue(typeof(TData), out eventActionList))
+            {
+                eventActionList.Add(action);
+            }
+            else
+            {
+                dataEvents.Add(typeof(TData), new List<Action<TData>>() { action });
+            }
+        }
+
+        // REMOVE LISTENER
+        public static void RemoveListener(Action<TData> action)
+        {
+            List<Action<TData>> eventActionList;
+            if (dataEvents.TryGetValue(typeof(TData), out eventActionList))
+            {
+                eventActionList.Remove(action);
+            }
+        }
+
+        // INVOKE
+        public static void Invoke(TData data)
+        {
+            List<Action<TData>> eventActionList;
+            if (dataEvents.TryGetValue(typeof(TData), out eventActionList))
+            {
+                int count = eventActionList.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    Action<TData> handler = eventActionList[i];
+                    if (handler != null)
+                    {
+                        handler(data);
+                    }
+                }
+            }
+        }
+    }
+}

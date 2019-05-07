@@ -72,7 +72,7 @@ namespace Hykudoru.Events.V2
         }
 
         // ADD LISTENER
-        
+
         static void Add<TEventKey>(TEventKey eventKey, Action action)
         {
             List<Action> eventActionList;
@@ -193,7 +193,7 @@ namespace Hykudoru.Events.V2
             }
         }
     }
-    
+
     public class EventManager<TEventArgs>
     {
         static Dictionary<int, List<Action<TEventArgs>>> dataEvents;
@@ -210,7 +210,6 @@ namespace Hykudoru.Events.V2
             if (dataEvents.TryGetValue(eventKey.GetHashCode(), out cachedEventActionList))
             {
                 cachedEventActionList.Add(action);
-                cachedEventActionList = null;
             }
             else
             {
@@ -223,7 +222,6 @@ namespace Hykudoru.Events.V2
             if (dataEvents.TryGetValue(eventKey.GetHashCode(), out cachedEventActionList))
             {
                 cachedEventActionList.Remove(action);
-                cachedEventActionList = null;
             }
         }
 
@@ -240,9 +238,6 @@ namespace Hykudoru.Events.V2
                         cachedAction(data);
                     }
                 }
-
-                cachedAction = null;
-                cachedEventActionList = null;
             }
         }
     }
@@ -258,6 +253,8 @@ namespace Hykudoru.Events.V3
     public class EventManager<TEvent, TData> where TEvent : EventType
     {
         private static Dictionary<Type, List<Action<TData>>> dataEvents;
+        private static List<Action<TData>> cachedEventActionList;
+        private static Action<TData> cachedEventAction;
 
         static EventManager()
         {
@@ -267,10 +264,9 @@ namespace Hykudoru.Events.V3
         // ADD LISTENER
         public static void AddListener(Action<TData> action)
         {
-            List<Action<TData>> eventActionList;
-            if (dataEvents.TryGetValue(typeof(TData), out eventActionList))
+            if (dataEvents.TryGetValue(typeof(TData), out cachedEventActionList))
             {
-                eventActionList.Add(action);
+                cachedEventActionList.Add(action);
             }
             else
             {
@@ -281,26 +277,24 @@ namespace Hykudoru.Events.V3
         // REMOVE LISTENER
         public static void RemoveListener(Action<TData> action)
         {
-            List<Action<TData>> eventActionList;
-            if (dataEvents.TryGetValue(typeof(TData), out eventActionList))
+            if (dataEvents.TryGetValue(typeof(TData), out cachedEventActionList))
             {
-                eventActionList.Remove(action);
+                cachedEventActionList.Remove(action);
             }
         }
 
         // INVOKE
         public static void Invoke(TData data)
         {
-            List<Action<TData>> eventActionList;
-            if (dataEvents.TryGetValue(typeof(TData), out eventActionList))
+            if (dataEvents.TryGetValue(typeof(TData), out cachedEventActionList))
             {
-                int count = eventActionList.Count;
+                int count = cachedEventActionList.Count;
                 for (int i = 0; i < count; i++)
                 {
-                    Action<TData> handler = eventActionList[i];
-                    if (handler != null)
+                    cachedEventAction = cachedEventActionList[i];
+                    if (cachedEventAction != null)
                     {
-                        handler(data);
+                        cachedEventAction(data);
                     }
                 }
             }

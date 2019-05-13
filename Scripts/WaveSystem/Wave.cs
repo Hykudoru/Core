@@ -8,7 +8,7 @@ public enum Status : byte
     Complete = 1
 }
 
-[CreateAssetMenu(fileName = "Wave", menuName = "ScriptableObjects/Wave")]
+//[CreateAssetMenu(fileName = "Wave", menuName = "ScriptableObjects/Wave")]
 [Serializable]
 public class Wave : ScriptableObject
 {
@@ -21,30 +21,25 @@ public class Wave : ScriptableObject
     public int EnemyCount
     {
         get { return enemyCount; }
-        private set { enemyCount = value; }
     }
 
     public Spawner[] Spawners
     {
         get { return spawners; }
-        private set { spawners = value; }
     }
 
     public Transform[] SpawnPoints
     {
         get { return spawnPoints; }
-        private set { spawnPoints = value; }
     }
 
     public float TimeLimit
     {
         get { return timeLimit; }
-        private set { timeLimit = value; }
     }
 
     public bool IsTimed
     {
         get { return isTimed; }
-        private set { isTimed = value; }
     }
 }

@@ -1,9 +1,14 @@
 ﻿using System.Collections;
 using UnityEngine;
-using Hykudoru.Events.V2;
+using Gemukodo.Events.V2;
 
-namespace Hykudoru
+namespace Gemukodo
 {
+    public static partial class EventType
+    {
+        public const string OnCameraShake = "OnCameraShake";
+    }
+
     public struct CameraShakeEventArgs
     {
         public float Seconds { get; set; }
@@ -18,8 +23,7 @@ namespace Hykudoru
 
     public class CameraShake : MonoBehaviour
     {
-        private WaitForEndOfFrame cache_waitForEndOfFrame;
-        private const string cache_ShakeMethodName = "Shake";
+        private WaitForEndOfFrame waitForEndOfFrame;
 
         private void Start()
         {
@@ -28,19 +32,19 @@ namespace Hykudoru
                 Debug.LogWarning("CamerShake: Missing parent transform. The camera shakes with respect to its parent transform.");
             }
 
-            cache_waitForEndOfFrame = new WaitForEndOfFrame();
+            waitForEndOfFrame = new WaitForEndOfFrame();
         }
 
         private void OnEnable()
         {
-            EventManager.AddListener(StringConst.Event.OnCameraShake, OnShake);
-            EventManager<CameraShakeEventArgs>.AddListener(StringConst.Event.OnCameraShake, OnShake);
+            EventManager.AddListener(EventType.OnCameraShake, OnShake);
+            EventManager<CameraShakeEventArgs>.AddListener(EventType.OnCameraShake, OnShake);
         }
 
         private void OnDisable()
         {
-            EventManager.RemoveListener(StringConst.Event.OnCameraShake, OnShake);
-            EventManager<CameraShakeEventArgs>.RemoveListener(StringConst.Event.OnCameraShake, OnShake);
+            EventManager.RemoveListener(EventType.OnCameraShake, OnShake);
+            EventManager<CameraShakeEventArgs>.RemoveListener(EventType.OnCameraShake, OnShake);
         }
 
         private void OnShake()
@@ -53,7 +57,7 @@ namespace Hykudoru
             if (transform.parent != null)
             {
                 StopAllCoroutines();
-                StartCoroutine(cache_ShakeMethodName, args);
+                StartCoroutine(EventType.OnCameraShake, args);
             }
         }
 
@@ -66,7 +70,7 @@ namespace Hykudoru
             {
                 transform.localPosition = new Vector3(Random.Range(-1f, 1f) * args.Intensity, Random.Range(-1f, 1f) * args.Intensity, transform.localPosition.z);
 
-                yield return cache_waitForEndOfFrame;
+                yield return waitForEndOfFrame;
             }
 
             transform.localPosition = initLocalPos;

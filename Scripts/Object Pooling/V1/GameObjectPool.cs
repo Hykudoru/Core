@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ObjectPool
+namespace Gemukodo.ObjectPooling.V1
 {
     public sealed class GameObjectPool : MonoBehaviour
     {
@@ -82,7 +82,7 @@ namespace ObjectPool
                 clone.transform.SetParent(transform);
                 clone.SetActive(false);
                 pooledObjects.Add(clone);
-                //OnPoolObjectAvailableEventHandler(this, EventArgs.Empty);
+                OnPoolObjectAvailableEventHandler(this, EventArgs.Empty);
             }
         }
 
@@ -107,35 +107,30 @@ namespace ObjectPool
 
         public GameObject FetchPooledObject()
         {
-            GameObject pooledObj = null;
+            GameObject pooled = null;
 
             //Search for inactive pooled objects in hierarchy and return it if found.
             for (int i = 0; i < pooledObjects.Count; i++)
             {
                 if (!pooledObjects[i].activeInHierarchy)
                 {
-                    pooledObj = pooledObjects[i];
+                    pooled = pooledObjects[i];
                 }
             }
 
             //Attempt to add 1 to the pool if none available and pool is resizable and still below maxCapacity.
-            //If successful allocated, return the obj to the requester silently. 
-            //Otherwise trigger event notifying objects unavailable until further notice.
+            //If successfully allocated, return the obj to the requester silently.
 
-            if (pooledObjects != null)
+            if (pooled == null)
             {
-                return pooledObj;
+                if (isResizable && (PoolSize + 1) < maxCapacity)
+                {
+                    PoolSize += 1;
+                    pooled = pooledObjects[pooledObjects.Count - 1];
+                }
             }
-            else if ((PoolSize + 1) < maxCapacity && isResizable)
-            {
-                PoolSize += 1;
-                return pooledObjects[pooledObjects.Count - 1];
-            }
-            else
-            {
-                //OnNoPoolObjectAvailableEventHandler(this, EventArgs.Empty);
-                return null;
-            }
+
+            return pooled;
         }
     }
 }

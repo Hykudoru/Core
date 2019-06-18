@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ObjectPool
+namespace Gemukodo.ObjectPooling.V1
 {
     public static class GameObjectPoolManager
     {

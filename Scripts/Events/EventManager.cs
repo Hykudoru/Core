@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Hykudoru.Events
+namespace Gemukodo.Events
 {
     public class EventManager
     {
@@ -20,7 +20,7 @@ namespace Hykudoru.Events
             eventDictionary = new Dictionary<int, UnityEvent>(50);
         }
 
-        public static void Add<TEventKey>(TEventKey eventKey, UnityAction listener)
+        public static void StartListening<TEventKey>(TEventKey eventKey, UnityAction listener)
         {
             UnityEvent e = null;
             if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
@@ -35,7 +35,7 @@ namespace Hykudoru.Events
             }
         }
 
-        public static void Remove<TEventKey>(TEventKey eventKey, UnityAction listener)
+        public static void StopListening<TEventKey>(TEventKey eventKey, UnityAction listener)
         {
             UnityEvent e = null;
             if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
@@ -44,7 +44,7 @@ namespace Hykudoru.Events
             }
         }
 
-        public static void Trigger<TEventKey>(TEventKey eventKey)
+        public static void TriggerEvent<TEventKey>(TEventKey eventKey)
         {
             UnityEvent e = null;
             if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
@@ -56,245 +56,228 @@ namespace Hykudoru.Events
             }
         }
     }
-}
 
-namespace Hykudoru.Events.V2
-{
-    public class EventManager
+    namespace V2
     {
-        private static Dictionary<int, List<Action>> emptyEvents;
-        private static Dictionary<int, List<Action<object>>> dataEvents;
-
-        static EventManager()
+        public class EventManager
         {
-            emptyEvents = new Dictionary<int, List<Action>>();
-            dataEvents = new Dictionary<int, List<Action<object>>>();
-        }
+            private static Dictionary<int, List<Action>> emptyEvents;
+            private static Dictionary<int, List<Action<object>>> dataEvents;
 
-        // ADD LISTENER
-
-        static void Add<TEventKey>(TEventKey eventKey, Action action)
-        {
-            List<Action> eventActionList;
-            if (emptyEvents.TryGetValue(eventKey.GetHashCode(), out eventActionList))
+            static EventManager()
             {
-                eventActionList.Add(action);
+                emptyEvents = new Dictionary<int, List<Action>>();
+                dataEvents = new Dictionary<int, List<Action<object>>>();
             }
-            else
+
+            // ADD LISTENER
+
+            static void Add<TEventKey>(TEventKey eventKey, Action eventHandler)
             {
-                emptyEvents.Add(eventKey.GetHashCode(), new List<Action>() { action });
-            }
-        }
-
-        static void Add<TEventKey, TParam>(TEventKey eventKey, Action<TParam> action)
-        {
-            List<Action<object>> eventActionList;
-            if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventActionList))
-            {
-                eventActionList.Add(action as Action<object>);
-            }
-            else
-            {
-                dataEvents.Add(eventKey.GetHashCode(), new List<Action<object>>() { action as Action<object> });
-            }
-        }
-
-        public static void AddListener(string eventKey, Action action)
-        {
-            Add(eventKey, action);
-        }
-
-        public static void AddListener(int eventKey, Action action)
-        {
-            Add(eventKey, action);
-        }
-
-        public static void AddListener(string eventKey, Action<object> action)
-        {
-            Add(eventKey, action);
-        }
-
-        public static void AddListener(int eventKey, Action<object> action)
-        {
-            Add(eventKey, action);
-        }
-
-        // REMOVE LISTENER
-
-        static void Remove<TEventKey>(TEventKey eventKey, Action action)
-        {
-            List<Action> eventActionList;
-            if (emptyEvents.TryGetValue(eventKey.GetHashCode(), out eventActionList))
-            {
-                eventActionList.Remove(action);
-            }
-        }
-
-        static void Remove<TEventKey, TParam>(TEventKey eventKey, Action<TParam> action)
-        {
-            List<Action<object>> eventActionList;
-            if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventActionList))
-            {
-                eventActionList.Remove(action as Action<object>);
-            }
-        }
-
-        public static void RemoveListener(string eventKey, Action action)
-        {
-            Remove(eventKey, action);
-        }
-
-        public static void RemoveListener(int eventKey, Action action)
-        {
-            Remove(eventKey, action);
-        }
-
-        public static void RemoveListener(string eventKey, Action<object> action)
-        {
-            Remove(eventKey, action);
-        }
-
-        public static void RemoveListener(int eventKey, Action<object> action)
-        {
-            Remove(eventKey, action);
-        }
-
-        public static void Invoke<TEventKey>(TEventKey eventKey)
-        {
-            List<Action> eventActionList;
-            if (emptyEvents.TryGetValue(eventKey.GetHashCode(), out eventActionList))
-            {
-                int count = eventActionList.Count;
-                for (int i = 0; i < count; i++)
+                List<Action> eventHandlerList;
+                if (emptyEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
                 {
-                    Action handler = eventActionList[i];
-                    if (handler != null)
+                    eventHandlerList.Add(eventHandler);
+                }
+                else
+                {
+                    emptyEvents.Add(eventKey.GetHashCode(), new List<Action>() { eventHandler });
+                }
+            }
+
+            static void Add<TEventKey, TParam>(TEventKey eventKey, Action<TParam> eventHandler)
+            {
+                List<Action<object>> eventHandlerList;
+                if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
+                {
+                    eventHandlerList.Add(eventHandler as Action<object>);
+                }
+                else
+                {
+                    dataEvents.Add(eventKey.GetHashCode(), new List<Action<object>>() { eventHandler as Action<object> });
+                }
+            }
+
+            public static void AddListener(string eventKey, Action eventHandler)
+            {
+                Add(eventKey, eventHandler);
+            }
+
+            public static void AddListener(int eventKey, Action eventHandler)
+            {
+                Add(eventKey, eventHandler);
+            }
+
+            public static void AddListener(string eventKey, Action<object> eventHandler)
+            {
+                Add(eventKey, eventHandler);
+            }
+
+            public static void AddListener(int eventKey, Action<object> eventHandler)
+            {
+                Add(eventKey, eventHandler);
+            }
+
+            // REMOVE LISTENER
+
+            static void Remove<TEventKey>(TEventKey eventKey, Action eventHandler)
+            {
+                List<Action> eventHandlerList;
+                if (emptyEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
+                {
+                    eventHandlerList.Remove(eventHandler);
+                }
+            }
+
+            static void Remove<TEventKey, TParam>(TEventKey eventKey, Action<TParam> eventHandler)
+            {
+                List<Action<object>> eventHandlerList;
+                if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
+                {
+                    eventHandlerList.Remove(eventHandler as Action<object>);
+                }
+            }
+
+            public static void RemoveListener(string eventKey, Action eventHandler)
+            {
+                Remove(eventKey, eventHandler);
+            }
+
+            public static void RemoveListener(int eventKey, Action eventHandler)
+            {
+                Remove(eventKey, eventHandler);
+            }
+
+            public static void RemoveListener(string eventKey, Action<object> eventHandler)
+            {
+                Remove(eventKey, eventHandler);
+            }
+
+            public static void RemoveListener(int eventKey, Action<object> eventHandler)
+            {
+                Remove(eventKey, eventHandler);
+            }
+
+            public static void Invoke<TEventKey>(TEventKey eventKey)
+            {
+                List<Action> eventHandlerList;
+                if (emptyEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
+                {
+                    int count = eventHandlerList.Count;
+                    for (int i = 0; i < count; i++)
                     {
-                        handler();
+                        eventHandlerList[i]?.Invoke();
+                    }
+                }
+            }
+
+            public static void Invoke<TEventKey, TData>(TEventKey eventKey, TData data)
+            {
+                List<Action<object>> eventHandlerList;
+                if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
+                {
+                    int count = eventHandlerList.Count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        eventHandlerList[i]?.Invoke(data);
                     }
                 }
             }
         }
 
-        public static void Invoke<TEventKey, TData>(TEventKey eventKey, TData data)
+        public class EventManager<TEventArgs>
         {
-            List<Action<object>> eventActionList;
-            if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventActionList))
+            static Dictionary<int, List<Action<TEventArgs>>> dataEvents;
+
+            static EventManager()
             {
-                int count = eventActionList.Count;
-                for (int i = 0; i < count; i++)
+                dataEvents = new Dictionary<int, List<Action<TEventArgs>>>();
+            }
+
+            public static void AddListener<TEventKey>(TEventKey eventKey, Action<TEventArgs> eventHandler)
+            {
+                List<Action<TEventArgs>> eventHandlerList;
+                if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
                 {
-                    Action<object> handler = eventActionList[i];
-                    if (handler != null)
+                    eventHandlerList.Add(eventHandler);
+                }
+                else
+                {
+                    dataEvents.Add(eventKey.GetHashCode(), new List<Action<TEventArgs>>() { eventHandler as Action<TEventArgs> });
+                }
+            }
+
+            public static void RemoveListener<TEventKey>(TEventKey eventKey, Action<TEventArgs> eventHandler)
+            {
+                List<Action<TEventArgs>> eventHandlerList;
+                if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
+                {
+                    eventHandlerList.Remove(eventHandler);
+                }
+            }
+
+            public static void Invoke<TEventKey>(TEventKey eventKey, TEventArgs data)
+            {
+                List<Action<TEventArgs>> eventHandlerList;
+                if (dataEvents.TryGetValue(eventKey.GetHashCode(), out eventHandlerList))
+                {
+                    int count = eventHandlerList.Count;
+                    for (int i = 0; i < count; i++)
                     {
-                        handler(data);
+                        eventHandlerList[i]?.Invoke(data);
                     }
                 }
             }
         }
     }
 
-    public class EventManager<TEventArgs>
+    namespace V3
     {
-        static Dictionary<int, List<Action<TEventArgs>>> dataEvents;
-        static List<Action<TEventArgs>> cachedEventActionList;
-        static Action<TEventArgs> cachedAction;
-
-        static EventManager()
+        public class EventType
         {
-            dataEvents = new Dictionary<int, List<Action<TEventArgs>>>();
+            public const EventType Empty = null;
         }
 
-        public static void AddListener<TEventKey>(TEventKey eventKey, Action<TEventArgs> action)
+        public class EventManager<TEvent, TData> where TEvent : EventType
         {
-            if (dataEvents.TryGetValue(eventKey.GetHashCode(), out cachedEventActionList))
-            {
-                cachedEventActionList.Add(action);
-            }
-            else
-            {
-                dataEvents.Add(eventKey.GetHashCode(), new List<Action<TEventArgs>>() { action as Action<TEventArgs> });
-            }
-        }
+            private static Dictionary<Type, List<Action<TData>>> dataEvents;
 
-        public static void RemoveListener<TEventKey>(TEventKey eventKey, Action<TEventArgs> action)
-        {
-            if (dataEvents.TryGetValue(eventKey.GetHashCode(), out cachedEventActionList))
+            static EventManager()
             {
-                cachedEventActionList.Remove(action);
+                dataEvents = new Dictionary<Type, List<Action<TData>>>();
             }
-        }
 
-        public static void Invoke<TEventKey>(TEventKey eventKey, TEventArgs data)
-        {
-            if (dataEvents.TryGetValue(eventKey.GetHashCode(), out cachedEventActionList))
+            public static void AddListener(Action<TData> eventHandler)
             {
-                int count = cachedEventActionList.Count;
-                for (int i = 0; i < count; i++)
+                List<Action<TData>> eventHandlerList;
+                if (dataEvents.TryGetValue(typeof(TData), out eventHandlerList))
                 {
-                    cachedAction = cachedEventActionList[i];
-                    if (cachedAction != null)
-                    {
-                        cachedAction(data);
-                    }
+                    eventHandlerList.Add(eventHandler);
+                }
+                else
+                {
+                    dataEvents.Add(typeof(TData), new List<Action<TData>>() { eventHandler });
                 }
             }
-        }
-    }
-}
 
-namespace Hykudoru.Events.V3
-{
-    public class EventType
-    {
-        public const EventType Empty = null;
-    }
-
-    public class EventManager<TEvent, TData> where TEvent : EventType
-    {
-        private static Dictionary<Type, List<Action<TData>>> dataEvents;
-        private static List<Action<TData>> cachedEventActionList;
-        private static Action<TData> cachedEventAction;
-
-        static EventManager()
-        {
-            dataEvents = new Dictionary<Type, List<Action<TData>>>();
-        }
-
-        // ADD LISTENER
-        public static void AddListener(Action<TData> action)
-        {
-            if (dataEvents.TryGetValue(typeof(TData), out cachedEventActionList))
+            public static void RemoveListener(Action<TData> eventHandler)
             {
-                cachedEventActionList.Add(action);
-            }
-            else
-            {
-                dataEvents.Add(typeof(TData), new List<Action<TData>>() { action });
-            }
-        }
-
-        // REMOVE LISTENER
-        public static void RemoveListener(Action<TData> action)
-        {
-            if (dataEvents.TryGetValue(typeof(TData), out cachedEventActionList))
-            {
-                cachedEventActionList.Remove(action);
-            }
-        }
-
-        // INVOKE
-        public static void Invoke(TData data)
-        {
-            if (dataEvents.TryGetValue(typeof(TData), out cachedEventActionList))
-            {
-                int count = cachedEventActionList.Count;
-                for (int i = 0; i < count; i++)
+                List<Action<TData>> eventHandlerList;
+                if (dataEvents.TryGetValue(typeof(TData), out eventHandlerList))
                 {
-                    cachedEventAction = cachedEventActionList[i];
-                    if (cachedEventAction != null)
+                    eventHandlerList.Remove(eventHandler);
+                }
+            }
+
+            public static void Invoke(TData data)
+            {
+                List<Action<TData>> eventHandlerList;
+                if (dataEvents.TryGetValue(typeof(TData), out eventHandlerList))
+                {
+                    int count = eventHandlerList.Count;
+                    for (int i = 0; i < count; i++)
                     {
-                        cachedEventAction(data);
+                        eventHandlerList[i]?.Invoke(data);
                     }
                 }
             }

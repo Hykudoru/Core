@@ -35,4 +35,5 @@ sysinfo.txt
 *.apk
 *.unitypackage
 
-Scripts_
+_*
+*.meta

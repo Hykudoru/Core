@@ -5,59 +5,62 @@ using UnityEngine.Events;
 
 namespace Gemukodo.Events
 {
-    public class EventManager
+    namespace v1
     {
-        protected static EventManager instance;
-        protected Dictionary<int, UnityEvent> eventDictionary;
-
-        static EventManager()
+        public class EventManager
         {
-            instance = new EventManager();
-        }
+            protected static EventManager instance;
+            protected Dictionary<int, UnityEvent> eventDictionary;
 
-        protected EventManager()
-        {
-            eventDictionary = new Dictionary<int, UnityEvent>(50);
-        }
-
-        public static void StartListening<TEventKey>(TEventKey eventKey, UnityAction listener)
-        {
-            UnityEvent e = null;
-            if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
+            static EventManager()
             {
-                e.AddListener(listener);
+                instance = new EventManager();
             }
-            else
-            {
-                e = new UnityEvent();
-                e.AddListener(listener);
-                instance.eventDictionary[eventKey.GetHashCode()] = e;
-            }
-        }
 
-        public static void StopListening<TEventKey>(TEventKey eventKey, UnityAction listener)
-        {
-            UnityEvent e = null;
-            if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
+            protected EventManager()
             {
-                e.RemoveListener(listener);
+                eventDictionary = new Dictionary<int, UnityEvent>(10);
             }
-        }
 
-        public static void TriggerEvent<TEventKey>(TEventKey eventKey)
-        {
-            UnityEvent e = null;
-            if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
+            public static void StartListening<TEventKey>(TEventKey eventKey, UnityAction listener)
             {
-                if (e != null)
+                UnityEvent e = null;
+                if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
                 {
-                    e.Invoke();
+                    e.AddListener(listener);
+                }
+                else
+                {
+                    e = new UnityEvent();
+                    e.AddListener(listener);
+                    instance.eventDictionary[eventKey.GetHashCode()] = e;
+                }
+            }
+
+            public static void StopListening<TEventKey>(TEventKey eventKey, UnityAction listener)
+            {
+                UnityEvent e = null;
+                if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
+                {
+                    e.RemoveListener(listener);
+                }
+            }
+
+            public static void TriggerEvent<TEventKey>(TEventKey eventKey)
+            {
+                UnityEvent e = null;
+                if (instance.eventDictionary.TryGetValue(eventKey.GetHashCode(), out e))
+                {
+                    if (e != null)
+                    {
+                        e.Invoke();
+                    }
                 }
             }
         }
     }
 
-    namespace V2
+    namespace v2
     {
         public class EventManager
         {
@@ -231,7 +234,7 @@ namespace Gemukodo.Events
         }
     }
 
-    namespace V3
+    namespace v3
     {
         public class EventType
         {
@@ -280,6 +283,86 @@ namespace Gemukodo.Events
                         eventHandlerList[i]?.Invoke(data);
                     }
                 }
+            }
+        }
+    }
+
+    namespace v4
+    {
+        public class EventManager<TEvent>
+        {
+            /*
+             * A single event type 'TEvent' can have several delegate signature variations that invoke only when 
+             * the eventtype AND the event handler's delegate signature matches with TArgs.
+             *
+             * Examples: 
+             * ---------------------------------
+             * Event<OnPlayerSpawned>.Trigger(); 
+             *  - Invokes "Action" signature type event handlers listening for "OnPlayerSpawned".)
+             *---------------------------------
+             * Event<OnPlayerSpawned>.Trigger<Vector3>(player.position); 
+             *  - Invokes 'Action<Vector3>' signature type event handlers listening for "OnPlayerSpawned".)
+             *  ---------------------------------
+             * Event<OnPlayerSpawned>.Trigger<Player>(player.position);
+             *  - Invokes "Action<Player>' signature type event handlers for "OnPlayerSpawned) 
+             */
+
+            public static event Action OnEvent;
+            static Dictionary<Type, Delegate> eventSignatureHandlers;
+
+            static EventManager()
+            {
+                eventSignatureHandlers = new Dictionary<Type, Delegate>();
+                OnEvent = () => { };
+            }
+
+            protected static Delegate GetEventHandlers<TArgs>()
+            {
+                Action<TArgs> ev;
+                if (!eventSignatureHandlers.ContainsKey(typeof(TArgs)))
+                {
+                    ev = arg => { };
+                    eventSignatureHandlers.Add(typeof(TArgs), ev);
+                }
+                else
+                {
+                    ev = (Action<TArgs>)eventSignatureHandlers[typeof(TArgs)];
+                }
+
+                return eventSignatureHandlers[typeof(TArgs)];
+            }
+
+            public static void AddEventHandler(Action handler)
+            {
+                OnEvent += handler;
+            }
+
+            public static void RemoveEventHandler(Action handler)
+            {
+                OnEvent -= handler;
+            }
+
+            public static void Trigger()
+            {
+                OnEvent?.Invoke();
+            }
+
+            public static void AddEventHandler<TArgs>(Action<TArgs> handler)
+            {
+                Action<TArgs> ev = GetEventHandlers<TArgs>() as Action<TArgs>;
+                eventSignatureHandlers[typeof(TArgs)] = ev += handler;
+            }
+
+            public static void RemoveEventHandler<TArgs>(Action<TArgs> handler)
+            {
+                Action<TArgs> action = GetEventHandlers<TArgs>() as Action<TArgs>;
+                eventSignatureHandlers[typeof(TArgs)] = action -= handler;
+            }
+
+            public static void Trigger<TArgs>(TArgs args)
+            {
+                ((Action<TArgs>)GetEventHandlers<TArgs>())?.Invoke(args);
+                OnEvent?.Invoke();
             }
         }
     }

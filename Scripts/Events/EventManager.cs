@@ -300,8 +300,10 @@ namespace Gemukodo.Events
                 dataEvents = new Dictionary<int, List<Action<object>>>();
             }
 
-            // ADD LISTENER
+            protected EventManager() { }
 
+            // ADD LISTENER
+            
             public static void Register<TEventKey>(TEventKey eventKey, Action eventHandler)
             {
                 List<Action> eventHandlerList;
@@ -328,9 +330,9 @@ namespace Gemukodo.Events
                 }
             }
             
-            public static void Register<TParam>(object eventKey, Action<TParam> eventHandler)
+            public static void Register<TParam>(Type eventKey, Action<TParam> eventHandler)
             {
-                Register<object, TParam>(eventKey, eventHandler);
+                Register<Type, TParam>(eventKey, eventHandler);
             }
 
             public static void Register<TParam>(String eventKey, Action<TParam> eventHandler)
@@ -363,9 +365,9 @@ namespace Gemukodo.Events
                 }
             }
             
-            public static void Unregister<TParam>(object eventKey, Action<TParam> eventHandler)
+            public static void Unregister<TParam>(Type eventKey, Action<TParam> eventHandler)
             {
-                Unregister<object, TParam>(eventKey, eventHandler);
+                Unregister<Type, TParam>(eventKey, eventHandler);
             }
 
             public static void Unregister<TParam>(String eventKey, Action<TParam> eventHandler)
@@ -377,7 +379,12 @@ namespace Gemukodo.Events
             {
                 Unregister<int, TParam>(eventKey, eventHandler);
             }
-            
+
+            public static void Trigger<TEventKey>()
+            {
+                Trigger(typeof(TEventKey));
+            }
+
             public static void Trigger<TEventKey>(TEventKey eventKey)
             {
                 List<Action> eventHandlerList;
@@ -420,16 +427,18 @@ namespace Gemukodo.Events
         * Event<OnPlayerSpawned>.Trigger<Player>(player.position);
         *  - Invokes "Action<Player>' signature type event handlers for "OnPlayerSpawned) 
         */
-        public partial class EventManager<TEvent>
+        public partial class EventManager<TEvent> : EventManager
         {
-            public static event Action OnEvent;
-            static Dictionary<Type, Delegate> eventSignatureHandlers;
+            private static event Action OnEvent;
+            private static Dictionary<Type, Delegate> eventSignatureHandlers;
 
             static EventManager()
             {
                 eventSignatureHandlers = new Dictionary<Type, Delegate>();
                 OnEvent = () => { };
             }
+
+            protected EventManager() { }
 
             protected static Delegate GetEventHandlers<TArgs>()
             {
@@ -482,14 +491,14 @@ namespace Gemukodo.Events
         }
     }
 
-    namespace v5
+    namespace Testing
     {
         public delegate void Void();
         public delegate void Callback();
-        public delegate void Callback<T>(T param);
-        public delegate void Callback<T1, T2>(T1 param, T2 param);
-        public delegate void Callback<T1, T2, T3>(T1 param, T2 param, T3 param);
-        public delegate void Callback<T1, T2, T3, T4>(T1 param, T2 param, T3 param, T4 param);
+        public delegate void Callback<T>(T arg);
+        public delegate void Callback<T1, T2>(T1 arg, T2 arg2);
+        public delegate void Callback<T1, T2, T3>(T1 arg, T2 arg2, T3 arg3);
+        public delegate void Callback<T1, T2, T3, T4>(T1 arg, T2 arg2, T3 arg3, T4 arg4);
 
         public partial class EventManager
         {

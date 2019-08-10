@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
-using Gemukodo.Events.V2;
+//using Gemukodo.Events.v2;
+using Gemukodo.Events.v4;
 
 namespace Gemukodo
 {
@@ -9,20 +10,20 @@ namespace Gemukodo
         public const string OnCameraShake = "OnCameraShake";
     }
 
-    public struct CameraShakeEventArgs
-    {
-        public float Seconds { get; set; }
-        public float Intensity { get; set; }
-        
-        public CameraShakeEventArgs(float seconds = .5f, float intensity = .25f)
-        {
-            Intensity = intensity;
-            Seconds = seconds;
-        }
-    }
-
     public class CameraShake : MonoBehaviour
     {
+        public struct CameraShakeEventArgs
+        {
+            public float Seconds { get; set; }
+            public float Intensity { get; set; }
+
+            public CameraShakeEventArgs(float seconds = .5f, float intensity = .25f)
+            {
+                Intensity = intensity;
+                Seconds = seconds;
+            }
+        }
+
         private WaitForEndOfFrame waitForEndOfFrame;
 
         private void Start()
@@ -37,14 +38,14 @@ namespace Gemukodo
 
         private void OnEnable()
         {
-            EventManager.AddListener(EventType.OnCameraShake, OnShake);
-            EventManager<CameraShakeEventArgs>.AddListener(EventType.OnCameraShake, OnShake);
+            EventManager.Register(EventType.OnCameraShake, OnShake);
+            EventManager.Register<CameraShakeEventArgs>(EventType.OnCameraShake, OnShake);
         }
 
         private void OnDisable()
         {
-            EventManager.RemoveListener(EventType.OnCameraShake, OnShake);
-            EventManager<CameraShakeEventArgs>.RemoveListener(EventType.OnCameraShake, OnShake);
+            EventManager.Unregister(EventType.OnCameraShake, OnShake);
+            EventManager.Unregister<CameraShakeEventArgs>(EventType.OnCameraShake, OnShake);
         }
 
         private void OnShake()

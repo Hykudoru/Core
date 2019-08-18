@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,7 +26,7 @@ namespace Gemukodo
             param2 = temp;
         }
 
-        public static bool[] RandomBools(int length)
+        public static bool[] GenerateRandomBools(int length)
         {
             bool[] bools = new bool[length];
             for (int i = 0; i < bools.Length; i++)
@@ -40,7 +40,7 @@ namespace Gemukodo
             return bools;
         }
 
-        public static int[] RandomInts(int length)
+        public static int[] GenerateRandomNumbers(int length)
         {
             int[] randNums = new int[length];
             for (int i = 0; i < length; i++)
@@ -61,20 +61,39 @@ namespace Gemukodo
             return list[random.Next() % list.Count];
         } 
 
-        public static T[] Randomize<T>(T[] items)
+        public static T[] GetShuffled<T>(T[] items)
         {
-            Array.Sort(RandomInts(items.Length), items);
-
-            return items;
-        }
-
-        public static IList<T> Randomize<T>(IList<T> list)
-        {
-            T[] copy = new T[list.Count];
-            list.CopyTo(copy, 0);
-            Array.Sort(RandomInts(list.Count), copy);
+            T[] copy = new T[items.Length];
+            Array.Copy(items, copy, items.Length);
+            Shuffle(copy);
 
             return copy;
+        }
+
+        public static void Shuffle<T>(T[] items)
+        {
+            Array.Sort(GenerateRandomNumbers(items.Length), items);
+        }
+
+        public static void Shuffle<T>(IList<T> list)
+        {
+            int count = list.Count;
+            var copy = new T[count];
+            list.CopyTo(copy, 0);
+            Array.Sort(GenerateRandomNumbers(count), copy);
+
+            for (int i = 0; i < count; i++)
+            {
+                list[i] = copy[i];
+            }
+        }
+
+        public static void Shuffle<T>(ref T source) where T : MulticastDelegate
+        {
+            //var d = Randomize(source.GetInvocationList());
+            Delegate[] copy = source.GetInvocationList();
+            Array.Sort(GenerateRandomNumbers(copy.Length), copy);
+            source = Delegate.Combine(copy) as T;
         }
 
         public static Transform[] Randomize(Transform[] transforms)
@@ -89,7 +108,7 @@ namespace Gemukodo
             }
 
             // Randomize original
-            Array.Sort(Utility.RandomInts(count), transforms);
+            Array.Sort(GenerateRandomNumbers(count), transforms);
 
             // Set positions to initial index order
             for (int i = 0; i < count; i++)
@@ -98,16 +117,6 @@ namespace Gemukodo
             }
 
             return transforms;
-        }
-
-        public static T[] Shuffle<T>(T[] items)
-        {
-            return Utility.Randomize(items);
-        }
-
-        public static IList<T> Shuffle<T>(IList<T> items)
-        {
-            return Utility.Randomize(items);
         }
     }
 
@@ -149,24 +158,25 @@ namespace Gemukodo
             return Utility.Random(list);
         }
 
-        public static T[] Randomize<T>(this T[] items)
+        public static T GetShuffled<T>(this T source) where T : MulticastDelegate
         {
-            return Utility.Randomize(items);
+            Utility.Shuffle(ref source);
+            return source;
         }
 
-        public static IList<T> Randomize<T>(this IList<T> list)
+        public static T[] GetShuffled<T>(this T[] items)
         {
-            return Utility.Randomize(list);
+            return Utility.GetShuffled(items);
         }
 
-        public static T[] Shuffle<T>(this T[] items)
+        public static void Shuffle<T>(this T[] items)
         {
-            return Utility.Randomize(items);
+            Utility.Shuffle(items);
         }
 
-        public static IList<T> Shuffle<T>(this IList<T> items)
+        public static void Shuffle<T>(this IList<T> items)
         {
-            return Utility.Randomize(items);
+            Utility.Shuffle(items);
         }
 
         public static GameObject Component<T>(this GameObject gameObject, Action<T> action) where T : Component
